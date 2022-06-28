@@ -70,14 +70,27 @@ namespace MyApp
 
                     for (int i = dependency.Count - 1; i >= 0; i--)
                     {
-                        var result = softRepo.GetSoft(dependency[i]).Build(softRepo);
-                        dependencyList.AddRange(result);
+                        var found = softRepo.GetSoft(dependency[i]);
+                        if (found.IsAlreadyBuilded is false)
+                        {
+                            var result = found.Build(softRepo);
+                            dependencyList.AddRange(result);
+                        }
+
                     }
                 }
-                IsAlreadyBuilded = true;
-                dependencyList.Add(Name);
 
-                return dependencyList;
+                if (IsAlreadyBuilded)
+                {
+                    return dependencyList;
+                }
+                else
+                {
+                    IsAlreadyBuilded = true;
+                    dependencyList.Add(Name);
+                    return dependencyList;
+                }
+
             }
         }
 

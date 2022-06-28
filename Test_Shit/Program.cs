@@ -4,6 +4,89 @@ namespace MyApp
 {
     internal class Program
     {
+        class Soft
+        {
+            public Soft(string name, string[] dependencies)
+            {
+                Name = name;
+                dependency.AddRange(dependencies);
+
+            }
+            public Soft(string name)
+            {
+                Name = name;
+            }
+
+
+            public bool IsAlreadyBuilded { get; set; }
+            public string Name { get; set; }
+            public List<string> dependency { get; set; } = new();
+
+            public List<string> Build(SoftRepo softRepo)
+            {
+                if (IsAlreadyBuilded)
+                    return new();
+
+                List<string> dependencyList = new();
+
+                if (dependency.Count > 0)
+                {
+
+                    for (int i = dependency.Count - 1; i >= 0; i--)
+                    {
+                        var found = softRepo.GetSoft(dependency[i]);
+                        if (found.IsAlreadyBuilded is false)
+                        {
+                            var result = found.Build(softRepo);
+                            dependencyList.AddRange(result);
+                        }
+
+                    }
+                }
+
+                if (IsAlreadyBuilded)
+                {
+                    return dependencyList;
+                }
+                else
+                {
+                    IsAlreadyBuilded = true;
+                    dependencyList.Add(Name);
+                    return dependencyList;
+                }
+
+            }
+        }
+
+        class SoftRepo
+        {
+            private List<Soft> soft = new();
+            private Dictionary<string, Soft> softHash = new();
+
+            public bool AddNewSoft(Soft soft)
+            {
+                if (this.softHash.ContainsKey(soft.Name) is false)
+                {
+                    this.soft.Add(soft);
+                    this.softHash.Add(soft.Name, soft);
+                    return true;
+                }
+                else
+                {
+                    throw new Exception();
+                }
+            }
+
+            public List<Soft> GetAllSoftToList()
+            {
+                return new List<Soft>(soft);
+            }
+
+            public Soft GetSoft(string name)
+            {
+                return softHash[name];
+            }
+        }
 
         static void Main(string[] args)
         {
@@ -12,108 +95,57 @@ namespace MyApp
             for (var i = 0; i < testCaseCount; i++)
             {
                 _ = Console.ReadLine();
-                var rl = Console.ReadLine().Split(' ').Select(it => int.Parse(it)).ToArray();
+                var dependenciesCounter = int.Parse(Console.ReadLine());
 
-                var coupeCount = rl[0];
-                var requestCount = rl[1];
-
-                SortedSet<int> freeCouple = new SortedSet<int>(Enumerable.Range(1, coupeCount));
-
-                bool[] soldenPlace = new bool[coupeCount * 2 + 1];
-
-                for (int r = 0; r < requestCount; r++)
+                SoftRepo softRepo = new();
+                for (int r = 0; r < dependenciesCounter; r++)
                 {
-                    rl = Console.ReadLine().Split(' ').Select(it => int.Parse(it)).ToArray();
 
-                    //System.Console.WriteLine(String.Join(" ", rl));
+                    var dependAndList = Console.ReadLine().Split(":").ToArray();
+                    var name = dependAndList[0];
 
-                    OperationType operation = (OperationType)rl[0];
-
-                    int place = 0;
-                    if (operation != OperationType.BuyWholeFirstCoupe)
+                    if (string.IsNullOrEmpty(dependAndList[1]) is false)
                     {
-                        place = rl[1];
-                    }
-
-                    if (operation == OperationType.Buy)
-                    {
-                        if (soldenPlace[place])
-                        {
-                            Console.WriteLine("FAIL");
-                        }
-                        else
-                        {
-                            soldenPlace[place] = true;
-                            freeCouple.Remove(calcCoupeNum(place));
-                            Console.WriteLine("SUCCESS");
-                        }
-                    }
-                    else if (operation == OperationType.Return)
-                    {
-                        if (soldenPlace[place])
-                        {
-                            Console.WriteLine("SUCCESS");
-                            soldenPlace[place] = false;
-
-                            if (place % 2 == 0)
-                            {
-                                if (soldenPlace[place - 1] == false)
-                                {
-                                    freeCouple.Add(calcCoupeNum(place));
-                                }
-                            }
-                            else
-                            {
-                                if (soldenPlace[place + 1] == false)
-                                {
-                                    freeCouple.Add(calcCoupeNum(place));
-                                }
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine("FAIL");
-                        }
+                        var str = dependAndList[1].Trim(' ');
+                        var dependencies = str.Split(' ').ToArray();
+                        softRepo.AddNewSoft(new Soft(name, dependencies));
                     }
                     else
                     {
-                        var firstCouple = freeCouple.FirstOrDefault();
-
-                        if (firstCouple != 0)
-                        {
-                            Console.WriteLine($"SUCCESS {firstCouple * 2 - 1}-{firstCouple * 2}");
-                            freeCouple.Remove(firstCouple);
-
-                            soldenPlace[firstCouple * 2 - 1] = true;
-                            soldenPlace[firstCouple * 2] = true;
-                        }
-                        else
-                        {
-                            Console.WriteLine("FAIL");
-                        }
+                        softRepo.AddNewSoft(new Soft(name));
                     }
+
                 }
+
+                var compileRequest = int.Parse(Console.ReadLine());
+                List<string> softForCompile = new();
+                for (int r = 0; r < compileRequest; r++)
+                {
+                    var softName = Console.ReadLine();
+                    softForCompile.Add(softName);
+                }
+
+
+                foreach (var item in softForCompile)
+                {
+                    var soft = softRepo.GetSoft(item);
+                    if (soft.IsAlreadyBuilded)
+                    {
+                        Console.WriteLine("0");
+                        continue;
+                    }
+                    var result = soft.Build(softRepo);
+                    result.Insert(0, result.Count.ToString());
+
+                    string resultString = String.Join(' ', result);
+                    Console.WriteLine(resultString);
+                    //System.Console.WriteLine(resultString);
+                }
+
                 Console.WriteLine();
+
             }
 
-
-        }
-        private static int calcCoupeNum(int place)
-        {
-            if (place % 2 == 0)
-            {
-                return place / 2;
-            }
-            else
-            {
-                return (place + 1) / 2;
-            }
-        }
-        enum OperationType
-        {
-            Buy = 1,
-            Return = 2,
-            BuyWholeFirstCoupe = 3
         }
     }
 }
