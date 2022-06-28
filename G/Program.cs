@@ -5,39 +5,10 @@ namespace MyApp
 {
     internal class Program
     {
-
-        class Person
-        {
-            public Person(string name, string phone)
-            {
-                Name = name;
-                PhoneNumbers.Add(phone, 0);
-                LatestNumofNumber = 0;
-            }
-            public bool AddPhone(string phone)
-            {
-                LatestNumofNumber++;
-
-                if (PhoneNumbers.ContainsKey(phone))
-                {
-                    PhoneNumbers[phone] = LatestNumofNumber;
-                    return false;
-                }
-                else
-                {
-                    PhoneNumbers.Add(phone, LatestNumofNumber);
-                    return true;
-                }
-            }
-            public int LatestNumofNumber { get; set; }
-            public string Name { get; set; } = string.Empty;
-            public Dictionary<string, int> PhoneNumbers { get; set; } = new();
-        }
-
         static void Main(string[] args)
         {
 
-            List<Sample> samples = TestSamples.GetSamples("tests");
+            List<Sample> samples = TestSamples.GetSamples("..\\..\\..\\tests");
 
             foreach (var sample in samples)
             {
@@ -54,7 +25,7 @@ namespace MyApp
                     {
                         var right = ansR[i];
                         var wrong = ansB[i];
-                        System.Console.WriteLine($"{right} != {wrong} || Question: {que[i + 2]}");
+                        System.Console.WriteLine($"NUM:{i} - {right} != {wrong} || Question: {que[i + 3]}");
                         throw new Exception();
                     }
                 }
@@ -66,8 +37,8 @@ namespace MyApp
                     System.Console.WriteLine($"{samples.IndexOf(sample)} SUCCESS");
                 }
             }
-        }
 
+        }
         private static string DoTheMath(string question)
         {
             MockConsole Console = new MockConsole(question);
@@ -77,54 +48,116 @@ namespace MyApp
 
             for (var i = 0; i < testCaseCount; i++)
             {
-                var recordCount = int.Parse(Console.ReadLine());
+                _ = Console.ReadLine();
+                var rl = Console.ReadLine().Split(' ').Select(it => int.Parse(it)).ToArray();
 
-                HashSet<string> logins = new HashSet<string>();
+                var coupeCount = rl[0];
+                var requestCount = rl[1];
 
-                Dictionary<string, Person> persons = new();
-                for (int r = 0; r < recordCount; r++)
+                SortedSet<int> freeCouple = new SortedSet<int>(Enumerable.Range(1, coupeCount));
+
+                bool[] soldenPlace = new bool[coupeCount * 2 + 1];
+
+                for (int r = 0; r < requestCount; r++)
                 {
-                    var record = Console.ReadLine().Split(' ').ToArray();
-                    if (persons.ContainsKey(record[0]))
+                    rl = Console.ReadLine().Split(' ').Select(it => int.Parse(it)).ToArray();
+
+                    //System.Console.WriteLine(String.Join(" ", rl));
+
+                    OperationType operation = (OperationType)rl[0];
+
+                    int place = 0;
+                    if (operation != OperationType.BuyWholeFirstCoupe)
                     {
-                        persons[record[0]].AddPhone(record[1]);
+                        place = rl[1];
+                    }
+
+                    if (operation == OperationType.Buy)
+                    {
+                        if (soldenPlace[place])
+                        {
+                            Console.WriteLine("FAIL");
+                        }
+                        else
+                        {
+                            soldenPlace[place] = true;
+                            freeCouple.Remove(calcCoupeNum(place));
+                            Console.WriteLine("SUCCESS");
+                        }
+                    }
+                    else if (operation == OperationType.Return)
+                    {
+                        if (soldenPlace[place])
+                        {
+                            Console.WriteLine("SUCCESS");
+                            soldenPlace[place] = false;
+
+                            if (place % 2 == 0)
+                            {
+                                if (soldenPlace[place - 1] == false)
+                                {
+                                    freeCouple.Add(calcCoupeNum(place));
+                                }
+                            }
+                            else
+                            {
+                                if (soldenPlace[place + 1] == false)
+                                {
+                                    freeCouple.Add(calcCoupeNum(place));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("FAIL");
+                        }
                     }
                     else
                     {
-                        persons.Add(record[0],new Person(record[0], record[1]));
+                        var firstCouple = freeCouple.FirstOrDefault();
+
+                        if (firstCouple != 0)
+                        {
+                            Console.WriteLine($"SUCCESS {firstCouple * 2 - 1}-{firstCouple * 2}");
+                            freeCouple.Remove(firstCouple);
+
+                            soldenPlace[firstCouple * 2 - 1] = true;
+                            soldenPlace[firstCouple * 2] = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine("FAIL");
+                        }
                     }
-                }
-
-                foreach (var person in persons)
-                {
-                    List<string> uniquePhones = new();
-                   
-                    if (person.Value.PhoneNumbers.Count > 5)
-                    {
-                        var numList =  person.Value.PhoneNumbers.ToList().OrderBy(x => x.Value).ToList();
-                        numList.RemoveRange(0, person.Value.PhoneNumbers.Count - 5);
-                        person.Value.PhoneNumbers = new Dictionary<string, int>(numList);
-                    }
-
-                    //person.Value.PhoneNumbers.Reverse();
-                }
-
-                foreach (var person in persons.OrderBy(x => x.Key))
-                {
-                    string strLine = $"{person.Value.Name}: {person.Value.PhoneNumbers.Count}";
-
-                    foreach (var phone in person.Value.PhoneNumbers.OrderByDescending(x=> x.Value))
-                    {
-                        strLine = $"{strLine} {phone.Key}";
-                    }
-                    Console.WriteLine(strLine);
                 }
                 Console.WriteLine();
             }
             //////////////////////////////////////////////////////////////////
             return Console.OutString;
         }
+
+        private static int calcCoupeNum(int place)
+        {
+            if (place % 2 == 0)
+            {
+                return place / 2;
+            }
+            else
+            {
+                return (place + 1) / 2;
+            }
+        }
+        enum OperationType
+        {
+            Buy = 1,
+            Return = 2,
+            BuyWholeFirstCoupe = 3
+        }
+
     }
+
+
+
 
 
     public class MockConsole
