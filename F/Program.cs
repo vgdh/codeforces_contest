@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using static MyApp.TestSamples;
 
-namespace MyApp // Note: actual namespace depends on the project name.
+namespace MyApp 
 {
     internal class Program
     {
@@ -25,7 +25,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
                     {
                         var right = ansR[i];
                         var wrong = ansB[i];
-                        System.Console.WriteLine($"NUM:{i} - {right} != {wrong} || Question: {que[i + 2]}");
+                        System.Console.WriteLine($"NUM:{i} - {right} != {wrong} || Question: {que[i + 3]}");
                         throw new Exception();
                     }
                 }
@@ -37,6 +37,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
                     System.Console.WriteLine($"{samples.IndexOf(sample)} SUCCESS");
                 }
             }
+     
         }
         private static string DoTheMath(string question)
         {
@@ -53,10 +54,10 @@ namespace MyApp // Note: actual namespace depends on the project name.
                 var coupeCount = rl[0];
                 var requestCount = rl[1];
 
-                HashSet<int> freeCouple = new HashSet<int>(Enumerable.Range(1, coupeCount));
+                SortedSet<int> freeCouple = new SortedSet<int>(Enumerable.Range(1, coupeCount));
 
                 bool[] soldenPlace = new bool[coupeCount * 2 + 1];
-
+            
                 for (int r = 0; r < requestCount; r++)
                 {
                     rl = Console.ReadLine().Split(' ').Select(it => int.Parse(it)).ToArray();
@@ -137,24 +138,25 @@ namespace MyApp // Note: actual namespace depends on the project name.
 
         private static int calcCoupeNum(int place)
         {
-            if (place % 2 != 0)
+            if (place % 2 == 0)
             {
-                return (place + 1) / 2;
+                return place / 2;
             }
             else
             {
-                return place / 2;
-
+                return (place + 1) / 2;
             }
         }
+        enum OperationType
+        {
+            Buy = 1,
+            Return = 2,
+            BuyWholeFirstCoupe = 3
+        }
+
     }
 
-    enum OperationType
-    {
-        Buy = 1,
-        Return = 2,
-        BuyWholeFirstCoupe = 3
-    }
+
 
 
 
